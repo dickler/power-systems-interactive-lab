@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Power Systems Interactive Lab</title>
+
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: #0f172a;
+            color: #f1f5f9;
+        }
+
+        header {
+            padding: 40px 20px;
+            text-align: center;
+            background: #1e293b;
+            border-bottom: 2px solid #334155;
+        }
+
+        h1 {
+            margin: 0;
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        p.subtitle {
+            margin-top: 10px;
+            font-size: 1.2rem;
+            color: #cbd5e1;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 40px auto;
+            padding: 0 20px;
+        }
+
+        .lab-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+        }
+
+        .card {
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 12px;
+            padding: 25px;
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .card-title {
+            font-size: 1.3rem;
+            color: #38bdf8;
+            margin-bottom: 12px;
+        }
+
+        .card-desc {
+            font-size: 1rem;
+            color: #cbd5e1;
+            margin-bottom: 15px;
+        }
+
+        .btn {
+            display: inline-block;
+            padding: 10px 16px;
+            border-radius: 8px;
+            background: #38bdf8;
+            color: #0f172a;
+            font-weight: 600;
+            text-decoration: none;
+        }
+
+        footer {
+            margin-top: 60px;
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+            font-size: 0.9rem;
+        }
+    </style>
+</head>
+
+<body>
+
+<header>
+    <h1>Power Systems Interactive Lab</h1>
+    <p class="subtitle">Interactive visualization tools for students, engineers and researchers</p>
+</header>
+
+<div class="container">
+
+    <h2>Available Labs</h2>
+
+    <div class="lab-grid">
+
+        <!-- LAB 01 CARD -->
+        <div class="card">
+            <div class="card-title">Lab 01 — Three-Phase Rotating Phasors</div>
+            <div class="card-desc">
+                Visualize positive and negative sequence rotation,  
+                time-domain waveforms, and the resulting vector fields.  
+                Includes dynamic controls for amplitudes, modes, and rotation trajectory.
+            </div>
+            <a href="./lab01/" class="btn">Open Lab 01</a>
+        </div>
+
+        <!-- FUTURE LAB TEMPLATE -->
+        <div class="card">
+            <div class="card-title">Lab 02 — Coming Soon</div>
+            <div class="card-desc">
+                Gain & phase margins, Bode plots, closed-loop bandwidth,  
+                and small-signal validation tools for power converters.
+            </div>
+            <a href="#" class="btn" style="background:#475569; color:#cbd5e1; cursor:not-allowed;">Not Available</a>
+        </div>
+
+        <div class="card">
+            <div class="card-title">Lab 03 — Coming Soon</div>
+            <div class="card-desc">
+                Clarke/Park transforms, dq rotating frames,  
+                frequency shifting, and harmonic sequence interpretation.
+            </div>
+            <a href="#" class="btn" style="background:#475569; color:#cbd5e1; cursor:not-allowed;">Not Available</a>
+        </div>
+
+    </div>
+</div>
+
+<footer>
+    © 2025 Power Systems Interactive Lab — by Dickler  
+    | Educational use encouraged | Open-source MIT License
+</footer>
+
+</body>
+</html>

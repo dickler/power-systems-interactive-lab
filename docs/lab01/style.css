@@ -1,0 +1,192 @@
+:root {
+    --bg-color: #1e1e1e;
+    --panel-color: #252526;
+    --text-color: #d4d4d4;
+    --accent-color: #007acc;
+    --accent-hover: #0098ff;
+    --border-color: #3e3e42;
+    --card-bg: #1e1e1e;
+    /* Same as bg for seamless look, or slightly lighter */
+    --font-family: 'Inter', sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    background-color: var(--bg-color);
+    color: var(--text-color);
+    font-family: var(--font-family);
+    height: 100vh;
+    overflow: hidden;
+    /* Prevent full page scroll, handle in content */
+}
+
+.app-container {
+    display: flex;
+    height: 100%;
+}
+
+/* Sidebar */
+.sidebar {
+    width: 300px;
+    background-color: var(--panel-color);
+    border-right: 1px solid var(--border-color);
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+    flex-shrink: 0;
+    position: relative;
+}
+
+.sidebar-footer {
+    margin-top: auto;
+    padding-top: 20px;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-color);
+    text-align: center;
+}
+
+.sidebar-footer a {
+    color: var(--accent-color);
+    text-decoration: none;
+}
+
+.sidebar-footer a:hover {
+    text-decoration: underline;
+}
+
+.sidebar-header h2 {
+    color: var(--accent-color);
+    font-size: 1.2rem;
+    text-align: center;
+    margin-bottom: 10px;
+}
+
+.control-group {
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.02);
+}
+
+.control-group h3 {
+    font-size: 0.9rem;
+    color: var(--accent-color);
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.control-item {
+    margin-bottom: 15px;
+}
+
+.control-item label {
+    display: block;
+    font-size: 0.85rem;
+    margin-bottom: 5px;
+}
+
+.control-item input[type="number"],
+.control-item input[type="range"] {
+    width: 100%;
+    background-color: var(--bg-color);
+    border: 1px solid var(--border-color);
+    color: var(--text-color);
+    padding: 5px;
+    border-radius: 4px;
+}
+
+.button-row {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+button {
+    flex: 1;
+    background-color: var(--accent-color);
+    color: white;
+    border: none;
+    padding: 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: var(--accent-hover);
+}
+
+.checkbox-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 10px;
+    font-size: 0.85rem;
+}
+
+input[type="checkbox"] {
+    accent-color: var(--accent-color);
+    width: 16px;
+    height: 16px;
+}
+
+/* Main Content */
+.content {
+    flex: 1;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+    overflow-y: auto;
+}
+
+.grid-row {
+    display: flex;
+    gap: 20px;
+    flex: 1;
+    min-height: 300px;
+}
+
+.card {
+    flex: 1;
+    background-color: var(--panel-color);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.card-header {
+    padding: 10px;
+    background-color: rgba(0, 0, 0, 0.2);
+    font-size: 0.9rem;
+    font-weight: 600;
+    text-align: center;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.canvas-container {
+    flex: 1;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    background-color: #111;
+    /* Slightly darker for plots */
+}
+
+canvas {
+    display: block;
+    width: 100%;
+    height: 100%;
+}
