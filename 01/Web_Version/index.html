@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Three-Phase Sequence Visualization</title>
+    <link rel="stylesheet" href="style.css">
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h2>Controls</h2>
+            </div>
+
+            <div class="control-group">
+                <h3>Playback</h3>
+                <div class="control-item">
+                    <label for="time-slider">Time: <span id="time-display">0.00</span> s</label>
+                    <input type="range" id="time-slider" min="0" max="199" value="0">
+                </div>
+                <div class="button-row">
+                    <button id="play-btn">Play</button>
+                    <button id="reset-btn">Reset</button>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="loop-check" checked>
+                    <label for="loop-check">Loop Animation</label>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Amplitudes</h3>
+                <div class="control-item">
+                    <label for="amp-pos">Positive Seq:</label>
+                    <input type="number" id="amp-pos" value="1.0" step="0.1" min="0" max="10">
+                </div>
+                <div class="control-item">
+                    <label for="amp-neg">Negative Seq:</label>
+                    <input type="number" id="amp-neg" value="0.1" step="0.1" min="0" max="10">
+                </div>
+            </div>
+
+            <div class="control-group">
+                <h3>Visualization</h3>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="decomp-check">
+                    <label for="decomp-check">Decomposition Mode</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="traj-check">
+                    <label for="traj-check">Show Trajectory</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="rot-fields-check">
+                    <label for="rot-fields-check">Show Pos/Neg in Combined</label>
+                </div>
+                <div class="checkbox-item">
+                    <input type="checkbox" id="extra-traj-check" disabled>
+                    <label for="extra-traj-check">Trajectory for Extra Fields</label>
+                </div>
+            </div>
+
+            <div class="sidebar-footer">
+                <p>Power Systems Interactive Lab</p>
+                <p><a href="mailto:felipedicler@gmail.com">felipedicler@gmail.com</a></p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="content">
+            <!-- Top Row: Vector Fields -->
+            <div class="grid-row">
+                <div class="card">
+                    <div class="card-header">Positive Sequence (CCW)</div>
+                    <div class="canvas-container">
+                        <canvas id="field-pos"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Negative Sequence (CW)</div>
+                    <div class="canvas-container">
+                        <canvas id="field-neg"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Combined Sequence</div>
+                    <div class="canvas-container">
+                        <canvas id="field-comb"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bottom Row: Signals -->
+            <div class="grid-row">
+                <div class="card">
+                    <div class="card-header">Signals: Positive Sequence</div>
+                    <div class="canvas-container">
+                        <canvas id="signal-pos"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Signals: Negative Sequence</div>
+                    <div class="canvas-container">
+                        <canvas id="signal-neg"></canvas>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-header">Signals: Combined</div>
+                    <div class="canvas-container">
+                        <canvas id="signal-comb"></canvas>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+
+</html>
