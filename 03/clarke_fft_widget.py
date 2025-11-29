@@ -44,7 +44,7 @@ class ClarkeFFTWidget(QWidget):
         self.apply_stylesheet()
 
         # Default amplitudes
-        self.amp_pos_harmonics = [1.0, 0.0, 0.0, 0.0, 0.0] # H1 to H5
+        self.amp_pos_harmonics = [1.0] + [0.0] * 12 # H1 to H13
         self.amp_neg = 0.1
 
         # Main Layout (Horizontal: Sidebar + Content)
@@ -55,10 +55,10 @@ class ClarkeFFTWidget(QWidget):
         # --- Sidebar ---
         sidebar = QFrame()
         sidebar.setObjectName("Sidebar")
-        sidebar.setFixedWidth(300)
+        sidebar.setFixedWidth(320) # Slightly wider for 2 columns of harmonics
         sidebar_layout = QVBoxLayout(sidebar)
-        sidebar_layout.setContentsMargins(15, 15, 15, 15)
-        sidebar_layout.setSpacing(15)
+        sidebar_layout.setContentsMargins(10, 10, 10, 10)
+        sidebar_layout.setSpacing(8)
 
         # Title in Sidebar
         title_label = QLabel("Controls")
@@ -66,9 +66,12 @@ class ClarkeFFTWidget(QWidget):
         title_label.setAlignment(Qt.AlignCenter)
         sidebar_layout.addWidget(title_label)
 
-        # 1. Playback Controls
+        # Playback Controls
+        group_playback = QGroupBox("Playback")
         group_playback = QGroupBox("Playback")
         layout_playback = QVBoxLayout()
+        layout_playback.setContentsMargins(5, 15, 5, 5)
+        layout_playback.setSpacing(5)
         
         self.slider_label = QLabel("Time: 0.00 s")
         self.slider = QSlider(Qt.Horizontal)
@@ -86,52 +89,95 @@ class ClarkeFFTWidget(QWidget):
 
         self.loop_checkbox = QCheckBox("Loop Animation")
         self.loop_checkbox.setChecked(True)
+        
+        # Speed Control
+        hbox_speed = QHBoxLayout()
+        hbox_speed.addWidget(QLabel("Speed:"))
+        self.combo_speed = QComboBox()
+        self.combo_speed.addItems(["0.25x", "0.5x", "1x", "2x", "5x", "10x"])
+        self.combo_speed.setCurrentIndex(2) # Default 1x
+        self.combo_speed.currentIndexChanged.connect(self.on_speed_changed)
+        hbox_speed.addWidget(self.combo_speed)
 
         layout_playback.addWidget(self.slider_label)
         layout_playback.addWidget(self.slider)
         layout_playback.addLayout(hbox_buttons)
+        layout_playback.addLayout(hbox_speed)
         layout_playback.addWidget(self.loop_checkbox)
         group_playback.setLayout(layout_playback)
         sidebar_layout.addWidget(group_playback)
 
         # 2. Amplitudes
         group_amps = QGroupBox("Amplitudes")
+        group_amps = QGroupBox("Amplitudes")
         layout_amps = QGridLayout()
+        layout_amps.setContentsMargins(5, 15, 5, 5)
+        layout_amps.setSpacing(5)
         
-        layout_amps.addWidget(QLabel("Positive Sequence Harmonics:"), 0, 0, 1, 2)
+        layout_amps.addWidget(QLabel("Positive Sequence Harmonics:"), 0, 0, 1, 4)
         
         self.amp_pos_inputs = []
-        for i in range(5):
+        for i in range(13):
             h_num = i + 1
-            layout_amps.addWidget(QLabel(f"H{h_num}:"), i+1, 0)
+            # Split into 2 columns: H1-H7 in col 0-1, H8-H13 in col 2-3
+            if i < 7:
+                row = i + 1
+                col_label = 0
+                col_spin = 1
+            else:
+                row = (i - 7) + 1
+                col_label = 2
+                col_spin = 3
+            
+            # Determine sequence type
+            rem = h_num % 3
+            if rem == 1:
+                seq_sym = "(+)"
+                seq_color = "#55FF55" # Green
+            elif rem == 2:
+                seq_sym = "(-)"
+                seq_color = "#FF55FF" # Magenta
+            else:
+                seq_sym = "(0)"
+                seq_color = "#FFFF55" # Yellow
+                
+            # Make H# bold and larger, sequence indicator smaller
+            label_text = f'<span style="font-weight:bold; font-size:10pt;">H{h_num}</span> <span style="font-size:7pt; color:{seq_color};">{seq_sym}</span>:'
+            label = QLabel(label_text)
+            label.setTextFormat(Qt.RichText)
+            
+            layout_amps.addWidget(label, row, col_label)
             spin = QDoubleSpinBox()
             spin.setRange(0.0, 10.0)
             spin.setValue(self.amp_pos_harmonics[i])
             spin.setSingleStep(0.1)
             spin.valueChanged.connect(self.update_amplitudes)
-            layout_amps.addWidget(spin, i+1, 1)
+            layout_amps.addWidget(spin, row, col_spin)
             self.amp_pos_inputs.append(spin)
 
-        layout_amps.addWidget(QLabel("Negative Seq (Fundamental):"), 6, 0)
+        layout_amps.addWidget(QLabel("Negative Seq (Fund):"), 8, 0, 1, 2)
         self.amp_neg_input = QDoubleSpinBox()
         self.amp_neg_input.setRange(0.0, 10.0)
         self.amp_neg_input.setValue(self.amp_neg)
         self.amp_neg_input.setSingleStep(0.1)
         self.amp_neg_input.valueChanged.connect(self.update_amplitudes)
-        layout_amps.addWidget(self.amp_neg_input, 6, 1)
+        layout_amps.addWidget(self.amp_neg_input, 8, 2, 1, 2)
 
         group_amps.setLayout(layout_amps)
         sidebar_layout.addWidget(group_amps)
 
         # 3. Transform Type
         group_transform = QGroupBox("Transform Type")
+        group_transform = QGroupBox("Transform Type")
         layout_transform = QVBoxLayout()
+        layout_transform.setContentsMargins(5, 15, 5, 5)
+        layout_transform.setSpacing(5)
         
         self.radio_amp_inv = QRadioButton("Amplitude Invariant (k=2/3)")
+        self.radio_amp_inv.setChecked(True) # Default Checked
         self.radio_amp_inv.toggled.connect(self.update_amplitudes)
         
         self.radio_power_inv = QRadioButton("Power Invariant (k=√2/3)")
-        self.radio_power_inv.setChecked(True)
         self.radio_power_inv.toggled.connect(self.update_amplitudes)
         
         layout_transform.addWidget(self.radio_amp_inv)
@@ -141,7 +187,10 @@ class ClarkeFFTWidget(QWidget):
 
         # 4. FFT Analysis (New)
         group_fft = QGroupBox("FFT Analysis")
+        group_fft = QGroupBox("FFT Analysis")
         layout_fft = QVBoxLayout()
+        layout_fft.setContentsMargins(5, 15, 5, 5)
+        layout_fft.setSpacing(5)
         
         layout_fft.addWidget(QLabel("Select Signal:"))
         self.fft_signal_combo = QComboBox()
@@ -150,6 +199,7 @@ class ClarkeFFTWidget(QWidget):
             "Alpha", "Beta",
             "Complex Vector (α + jβ)"
         ])
+        self.fft_signal_combo.setCurrentText("Complex Vector (α + jβ)") # Default
         self.fft_signal_combo.currentIndexChanged.connect(self.compute_fft)
         layout_fft.addWidget(self.fft_signal_combo)
         
@@ -158,12 +208,17 @@ class ClarkeFFTWidget(QWidget):
 
         # 5. Visualization Options
         group_viz = QGroupBox("Visualization")
+        group_viz = QGroupBox("Visualization")
         layout_viz = QVBoxLayout()
+        layout_viz.setContentsMargins(5, 15, 5, 5)
+        layout_viz.setSpacing(5)
 
         self.decomposition_checkbox = QCheckBox("Decomposition Mode")
+        self.decomposition_checkbox.setChecked(True) # Default Checked
         self.decomposition_checkbox.stateChanged.connect(self.update_plots)
         
         self.trajectory_checkbox = QCheckBox("Show Trajectory")
+        self.trajectory_checkbox.setChecked(True) # Default Checked
         self.trajectory_checkbox.stateChanged.connect(self.toggle_trajectory)
 
         self.show_rotating_fields_checkbox = QCheckBox("Show Pos/Neg in Combined")
@@ -179,6 +234,7 @@ class ClarkeFFTWidget(QWidget):
         layout_viz.addWidget(self.extra_trajectory_checkbox)
         group_viz.setLayout(layout_viz)
         sidebar_layout.addWidget(group_viz)
+
 
         sidebar_layout.addStretch() # Push everything up
         main_layout.addWidget(sidebar)
@@ -211,7 +267,7 @@ class ClarkeFFTWidget(QWidget):
         self.plot_fft.setLabel('left', "Magnitude")
         self.plot_fft.getPlotItem().getAxis('left').enableAutoSIPrefix(False)
         self.plot_fft.setYRange(0, 1)
-        self.plot_fft.setXRange(-5.5, 5.5)
+        self.plot_fft.setXRange(-13.5, 13.5)
         self.plot_fft.getPlotItem().getAxis('bottom').setTickSpacing(1, 1)
         grid.addWidget(self.plot_fft, 2, 0, 1, 2)
 
@@ -307,14 +363,14 @@ class ClarkeFFTWidget(QWidget):
                 background-color: {COLOR_BG};
                 color: {COLOR_TEXT};
                 font-family: 'Segoe UI', sans-serif;
-                font-size: 10pt;
+                font-size: 9pt;
             }}
             QFrame#Sidebar {{
                 background-color: {COLOR_PANEL};
                 border-right: 1px solid {COLOR_BORDER};
             }}
             QLabel#SidebarTitle {{
-                font-size: 14pt;
+                font-size: 12pt;
                 font-weight: bold;
                 color: {COLOR_ACCENT};
                 margin-bottom: 10px;
@@ -322,8 +378,8 @@ class ClarkeFFTWidget(QWidget):
             QGroupBox {{
                 border: 1px solid {COLOR_BORDER};
                 border-radius: 6px;
-                margin-top: 12px;
-                padding-top: 10px;
+                margin-top: 6px;
+                padding-top: 6px;
                 font-weight: bold;
             }}
             QGroupBox::title {{
@@ -719,15 +775,6 @@ class ClarkeFFTWidget(QWidget):
         self.slider.setValue(0)
         self.clear_trajectories()
 
-    def toggle_play(self):
-        if self.is_playing:
-            self.timer.stop()
-            self.play_button.setText("Play")
-        else:
-            self.timer.start(50)
-            self.play_button.setText("Pause")
-        self.is_playing = not self.is_playing
-
     def advance_frame(self):
         current = self.slider.value()
         if current < self.slider.maximum():
@@ -740,6 +787,35 @@ class ClarkeFFTWidget(QWidget):
                 self.timer.stop()
                 self.play_button.setText("Play")
                 self.is_playing = False
+
+    def toggle_play(self):
+        if self.is_playing:
+            self.timer.stop()
+            self.play_button.setText("Play")
+        else:
+            interval = self.get_interval()
+            self.timer.start(interval)
+            self.play_button.setText("Pause")
+        self.is_playing = not self.is_playing
+
+    def get_interval(self):
+        speed_mult = float(self.combo_speed.currentText().replace('x', ''))
+        # Base interval 50ms (20 FPS) for 1x speed
+        interval = int(50 / speed_mult)
+        if interval < 1: interval = 1
+        return interval
+
+    def update_timer_interval(self):
+        interval = self.get_interval()
+        if self.timer.isActive():
+            self.timer.start(interval)
+
+    def on_speed_changed(self):
+        self.update_timer_interval()
+
+    def on_speed_changed(self):
+        if self.is_playing:
+            self.update_timer_interval()
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

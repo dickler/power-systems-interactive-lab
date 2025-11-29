@@ -29,19 +29,19 @@ let state = {
     loop: true,
 
     // Amplitudes
-    ampPosHarmonics: [1.0, 0.0, 0.0, 0.0, 0.0], // H1-H5
+    ampPosHarmonics: [1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], // H1-H13
     ampNeg: 0.1,
 
     // Transform Type
-    transformType: 'power', // 'amp' or 'power'
+    transformType: 'amp', // 'amp' or 'power'
 
     // FFT
-    fftSignalSelection: 'Phase A',
+    fftSignalSelection: 'Complex Vector',
     fftData: { freqs: [], mags: [] },
 
     // Visualization
-    decomposition: false,
-    showTraj: false,
+    decomposition: true,
+    showTraj: true,
     showRotFields: false,
     extraTraj: false,
 
@@ -70,13 +70,22 @@ const els = {
     playBtn: document.getElementById('play-btn'),
     resetBtn: document.getElementById('reset-btn'),
     loopCheck: document.getElementById('loop-check'),
+    speedSelect: document.getElementById('speed-select'),
 
     ampInputs: [
         document.getElementById('amp-h1'),
         document.getElementById('amp-h2'),
         document.getElementById('amp-h3'),
         document.getElementById('amp-h4'),
-        document.getElementById('amp-h5')
+        document.getElementById('amp-h5'),
+        document.getElementById('amp-h6'),
+        document.getElementById('amp-h7'),
+        document.getElementById('amp-h8'),
+        document.getElementById('amp-h9'),
+        document.getElementById('amp-h10'),
+        document.getElementById('amp-h11'),
+        document.getElementById('amp-h12'),
+        document.getElementById('amp-h13')
     ],
     ampNeg: document.getElementById('amp-neg'),
 
@@ -117,6 +126,7 @@ function init() {
     els.resetBtn.addEventListener('click', reset);
     els.slider.addEventListener('input', (e) => updateFrame(parseInt(e.target.value)));
     els.loopCheck.addEventListener('change', (e) => state.loop = e.target.checked);
+    els.speedSelect.addEventListener('change', (e) => state.speedMult = parseFloat(e.target.value));
 
     // Amplitudes
     els.ampInputs.forEach((input, idx) => {
@@ -394,8 +404,8 @@ function computeFFT() {
         // Normalize
         mag /= windowSum;
 
-        // Filter Range (-5.5 to 5.5)
-        if (freq >= -5.5 && freq <= 5.5) {
+        // Filter Range (-13.5 to 13.5)
+        if (freq >= -13.5 && freq <= 13.5) {
             freqs.push(freq);
             mags.push(mag);
         }
@@ -533,7 +543,10 @@ function updateFrame(frame) {
 
 function animate(timestamp) {
     if (state.isPlaying) {
-        if (timestamp - lastFrameTime >= FRAME_DELAY) {
+        const speedMult = state.speedMult || 1.0;
+        const delay = FRAME_DELAY / speedMult;
+
+        if (timestamp - lastFrameTime >= delay) {
             let nextFrame = state.frame + 1;
             if (nextFrame >= POINTS) {
                 if (state.loop) {
@@ -812,9 +825,9 @@ function drawFFT(ctx, canvasId) {
     ctx.scale(viewState.scale, viewState.scale);
     ctx.translate(-w / 2, -h / 2);
 
-    // X-Axis: -5.5 to 5.5
+    // X-Axis: -13.5 to 13.5
     // Y-Axis: 0 to 1 (or max)
-    const xRange = 11; // -5.5 to 5.5
+    const xRange = 27; // -13.5 to 13.5
     const xScale = w / xRange;
     const yScale = h * 0.8; // Leave some margin
     const cx = w / 2;
@@ -834,14 +847,14 @@ function drawFFT(ctx, canvasId) {
     ctx.beginPath();
 
     // X Grid (Integer steps)
-    for (let i = -5; i <= 5; i++) {
+    for (let i = -13; i <= 13; i++) {
         const x = cx + i * xScale;
         ctx.moveTo(x, cy); ctx.lineTo(x, cy - maxMag * yFactor);
     }
     // Y Grid (0.1 steps)
     for (let val = 0; val <= maxMag; val += 0.1) {
         const y = cy - val * yFactor;
-        ctx.moveTo(cx - 5.5 * xScale, y); ctx.lineTo(cx + 5.5 * xScale, y);
+        ctx.moveTo(cx - 13.5 * xScale, y); ctx.lineTo(cx + 13.5 * xScale, y);
     }
     ctx.stroke();
 
@@ -849,7 +862,7 @@ function drawFFT(ctx, canvasId) {
     ctx.strokeStyle = COLOR_AXIS;
     ctx.lineWidth = 2 / viewState.scale;
     ctx.beginPath();
-    ctx.moveTo(cx - 5.5 * xScale, cy); ctx.lineTo(cx + 5.5 * xScale, cy); // X Axis
+    ctx.moveTo(cx - 13.5 * xScale, cy); ctx.lineTo(cx + 13.5 * xScale, cy); // X Axis
     ctx.moveTo(cx, cy); ctx.lineTo(cx, cy - maxMag * yFactor); // Y Axis (Center)
     ctx.stroke();
 
@@ -860,7 +873,7 @@ function drawFFT(ctx, canvasId) {
     ctx.textBaseline = 'top';
 
     // X Labels
-    for (let i = -5; i <= 5; i++) {
+    for (let i = -13; i <= 13; i++) {
         const x = cx + i * xScale;
         ctx.fillText(i.toString(), x, cy + 5 / viewState.scale);
     }

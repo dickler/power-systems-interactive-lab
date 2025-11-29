@@ -29,32 +29,75 @@
                     <input type="checkbox" id="loop-check" checked>
                     <label for="loop-check">Loop Animation</label>
                 </div>
+                <div class="input-group">
+                    <label for="speed-select">Speed:</label>
+                    <select id="speed-select">
+                        <option value="0.25">0.25x</option>
+                        <option value="0.5">0.5x</option>
+                        <option value="1" selected>1x</option>
+                        <option value="2">2x</option>
+                        <option value="5">5x</option>
+                        <option value="10">10x</option>
+                    </select>
+                </div>
             </div>
 
             <div class="control-group">
                 <h3>Amplitudes</h3>
                 <div class="input-group">
-                    <label>Pos Seq Harmonics:</label>
+                    <label>Harmonics:</label>
                     <div class="harmonic-inputs">
                         <div class="h-input">
-                            <label>H1:</label>
+                            <label>H1 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h1" value="1.0" step="0.1" min="0" max="10">
                         </div>
                         <div class="h-input">
-                            <label>H2:</label>
+                            <label>H2 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h2" value="0.0" step="0.1" min="0" max="10">
                         </div>
                         <div class="h-input">
-                            <label>H3:</label>
+                            <label>H3 <span class="seq-zero">(0)</span>:</label>
                             <input type="number" id="amp-h3" value="0.0" step="0.1" min="0" max="10">
                         </div>
                         <div class="h-input">
-                            <label>H4:</label>
+                            <label>H4 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h4" value="0.0" step="0.1" min="0" max="10">
                         </div>
                         <div class="h-input">
-                            <label>H5:</label>
+                            <label>H5 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h5" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H6 <span class="seq-zero">(0)</span>:</label>
+                            <input type="number" id="amp-h6" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H7 <span class="seq-pos">(+)</span>:</label>
+                            <input type="number" id="amp-h7" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H8 <span class="seq-neg">(-)</span>:</label>
+                            <input type="number" id="amp-h8" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H9 <span class="seq-zero">(0)</span>:</label>
+                            <input type="number" id="amp-h9" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H10 <span class="seq-pos">(+)</span>:</label>
+                            <input type="number" id="amp-h10" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H11 <span class="seq-neg">(-)</span>:</label>
+                            <input type="number" id="amp-h11" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H12 <span class="seq-zero">(0)</span>:</label>
+                            <input type="number" id="amp-h12" value="0.0" step="0.1" min="0" max="10">
+                        </div>
+                        <div class="h-input">
+                            <label>H13 <span class="seq-pos">(+)</span>:</label>
+                            <input type="number" id="amp-h13" value="0.0" step="0.1" min="0" max="10">
                         </div>
                     </div>
                 </div>
@@ -68,11 +111,11 @@
                 <h3>Transform Type</h3>
                 <div class="radio-group">
                     <div>
-                        <input type="radio" id="trans-amp" name="transform-type" value="amp">
+                        <input type="radio" id="trans-amp" name="transform-type" value="amp" checked>
                         <label for="trans-amp">Amplitude Invariant (k=2/3)</label>
                     </div>
                     <div>
-                        <input type="radio" id="trans-power" name="transform-type" value="power" checked>
+                        <input type="radio" id="trans-power" name="transform-type" value="power">
                         <label for="trans-power">Power Invariant (k=√2/3)</label>
                     </div>
                 </div>
@@ -88,7 +131,7 @@
                         <option value="Phase C">Phase C</option>
                         <option value="Alpha">Alpha</option>
                         <option value="Beta">Beta</option>
-                        <option value="Complex Vector">Complex Vector (α + jβ)</option>
+                        <option value="Complex Vector" selected>Complex Vector (α + jβ)</option>
                     </select>
                 </div>
             </div>
@@ -97,11 +140,11 @@
                 <h3>Visualization</h3>
                 <div class="checkbox-group">
                     <div>
-                        <input type="checkbox" id="decomp-check">
+                        <input type="checkbox" id="decomp-check" checked>
                         <label for="decomp-check">Decomposition Mode</label>
                     </div>
                     <div>
-                        <input type="checkbox" id="traj-check">
+                        <input type="checkbox" id="traj-check" checked>
                         <label for="traj-check">Show Trajectory</label>
                     </div>
                     <div>
@@ -124,23 +167,23 @@
         <div class="main-content">
             <div class="plot-grid">
                 <div class="plot-container">
-                    <h3>Combined Sequence (ABC)</h3>
+                    <h3> ABC Phasors</h3>
                     <canvas id="field-combined"></canvas>
                 </div>
                 <div class="plot-container">
-                    <h3>Signals: Combined (ABC)</h3>
+                    <h3>ABC Signals</h3>
                     <canvas id="signal-combined"></canvas>
                 </div>
                 <div class="plot-container">
-                    <h3>Clarke Transform (αβ)</h3>
+                    <h3>Clarke Transform - αβ Phasors</h3>
                     <canvas id="field-clarke"></canvas>
                 </div>
                 <div class="plot-container">
-                    <h3>Signals: αβ</h3>
+                    <h3>αβ Signals</h3>
                     <canvas id="signal-clarke"></canvas>
                 </div>
                 <div class="plot-container fft-container">
-                    <h3>FFT Spectrum (Magnitude)</h3>
+                    <h3>Single Side FFT Spectrum (Magnitude)</h3>
                     <canvas id="signal-fft"></canvas>
                 </div>
             </div>
