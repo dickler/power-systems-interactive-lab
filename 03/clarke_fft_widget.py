@@ -3,10 +3,11 @@ import numpy as np
 from PyQt5.QtWidgets import (
     QApplication, QWidget, QVBoxLayout, QGridLayout, QSlider, QLabel,
     QPushButton, QCheckBox, QDoubleSpinBox, QHBoxLayout, QGroupBox, QFrame,
-    QSizePolicy, QSplitter, QRadioButton, QComboBox
+    QSizePolicy, QSplitter, QRadioButton, QComboBox, QColorDialog
 )
 from PyQt5.QtCore import Qt, QTimer
-from PyQt5.QtGui import QColor, QPalette, QFont
+from PyQt5.QtGui import QColor, QPalette, QFont, QPixmap, QIcon, QPainter, QPen, QBrush, QPolygonF
+from PyQt5.QtCore import QPointF, QRectF
 import pyqtgraph as pg
 
 # --- Styling & Parameters ---
@@ -35,6 +36,94 @@ angles = np.array([0, 120, 240]) * np.pi / 180
 pg.setConfigOption('background', COLOR_BG)
 pg.setConfigOption('foreground', COLOR_TEXT)
 pg.setConfigOptions(antialias=True)
+
+# Distinct colors for harmonics (H1-H13)
+DEFAULT_HARM_COLORS = [
+    '#55FF55', # H1 (Green)
+    '#FF55FF', # H2 (Magenta)
+    '#FFFF55', # H3 (Yellow)
+    '#00FFFF', # H4 (Cyan)
+    '#FF5555', # H5 (Red)
+    '#FFA500', # H6 (Orange)
+    '#800080', # H7 (Purple)
+    '#008000', # H8 (Dark Green)
+    '#0000FF', # H9 (Blue)
+    '#FFC0CB', # H10 (Pink)
+    '#A52A2A', # H11 (Brown)
+    '#808080', # H12 (Gray)
+    '#FFFFFF', # H13 (White)
+]
+
+class ColorButton(QPushButton):
+    def __init__(self, color, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(24, 24)
+        self.setStyleSheet("border: none;") # Remove border
+        self.setColor(color)
+        self.clicked.connect(self.pickColor)
+        self.colorChanged = None # Callback
+
+    def setColor(self, color):
+        self._color = QColor(color)
+        self.updateIcon()
+
+    def updateIcon(self):
+        pixmap = QPixmap(16, 16)
+        pixmap.fill(self._color)
+        self.setIcon(QIcon(pixmap))
+
+    def color(self):
+        return self._color.name()
+
+    def pickColor(self):
+        color = QColorDialog.getColor(self._color, self, "Select Color")
+        if color.isValid():
+            self.setColor(color)
+            if self.colorChanged:
+                self.colorChanged()
+
+class OverlayWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setAttribute(Qt.WA_TransparentForMouseEvents)
+        self.setAttribute(Qt.WA_NoSystemBackground)
+        self.setAttribute(Qt.WA_TranslucentBackground) # Ensure transparency
+        self.arrow_start = None
+        self.arrow_end = None
+        self.arrow_color = QColor(255, 255, 255)
+
+    def show_arrow(self, start, end, color):
+        self.arrow_start = start
+        self.arrow_end = end
+        self.arrow_color = QColor(color)
+        self.update()
+
+    def clear_arrow(self):
+        self.arrow_start = None
+        self.arrow_end = None
+        self.update()
+
+    def paintEvent(self, event):
+        if self.arrow_start and self.arrow_end:
+            painter = QPainter(self)
+            painter.setRenderHint(QPainter.Antialiasing)
+            
+            pen = QPen(self.arrow_color, 3)
+            painter.setPen(pen)
+            painter.setBrush(self.arrow_color)
+            
+            # Draw line
+            painter.drawLine(self.arrow_start, self.arrow_end)
+            
+            # Draw arrow head
+            angle = np.arctan2(self.arrow_end.y() - self.arrow_start.y(), self.arrow_end.x() - self.arrow_start.x())
+            arrow_size = 15
+            
+            p1 = self.arrow_end - QPointF(arrow_size * np.cos(angle - np.pi/6), arrow_size * np.sin(angle - np.pi/6))
+            p2 = self.arrow_end - QPointF(arrow_size * np.cos(angle + np.pi/6), arrow_size * np.sin(angle + np.pi/6))
+            
+            arrow_head = QPolygonF([self.arrow_end, p1, p2])
+            painter.drawPolygon(arrow_head)
 
 class ClarkeFFTWidget(QWidget):
     def __init__(self):
@@ -107,27 +196,44 @@ class ClarkeFFTWidget(QWidget):
         group_playback.setLayout(layout_playback)
         sidebar_layout.addWidget(group_playback)
 
+        # Presets
+        group_presets = QGroupBox("Presets")
+        layout_presets = QVBoxLayout()
+        layout_presets.setContentsMargins(5, 15, 5, 5)
+        
+        self.combo_presets = QComboBox()
+        self.combo_presets.addItems(["Custom", "Wind Blades", "Oak Tree", "Gear", "Hypotrochoid", "Pure Sine"])
+        self.combo_presets.currentIndexChanged.connect(self.apply_preset)
+        layout_presets.addWidget(self.combo_presets)
+        
+        group_presets.setLayout(layout_presets)
+        sidebar_layout.addWidget(group_presets)
+
         # 2. Amplitudes
         group_amps = QGroupBox("Amplitudes")
-        group_amps = QGroupBox("Amplitudes")
+
         layout_amps = QGridLayout()
         layout_amps.setContentsMargins(5, 15, 5, 5)
         layout_amps.setSpacing(5)
         
-        layout_amps.addWidget(QLabel("Positive Sequence Harmonics:"), 0, 0, 1, 4)
+        layout_amps.addWidget(QLabel("Harmonics:"), 0, 0, 1, 4)
         
         self.amp_pos_inputs = []
+        self.harmonic_color_btns = []
+        
         for i in range(13):
             h_num = i + 1
-            # Split into 2 columns: H1-H7 in col 0-1, H8-H13 in col 2-3
+            # Split into 2 columns: H1-H7 in col 0-2, H8-H13 in col 3-5
             if i < 7:
                 row = i + 1
                 col_label = 0
                 col_spin = 1
+                col_color = 2
             else:
                 row = (i - 7) + 1
-                col_label = 2
-                col_spin = 3
+                col_label = 3
+                col_spin = 4
+                col_color = 5
             
             # Determine sequence type
             rem = h_num % 3
@@ -154,6 +260,12 @@ class ClarkeFFTWidget(QWidget):
             spin.valueChanged.connect(self.update_amplitudes)
             layout_amps.addWidget(spin, row, col_spin)
             self.amp_pos_inputs.append(spin)
+            
+            # Color Button
+            btn_color = ColorButton(DEFAULT_HARM_COLORS[i])
+            btn_color.colorChanged = self.on_color_changed
+            layout_amps.addWidget(btn_color, row, col_color)
+            self.harmonic_color_btns.append(btn_color)
 
         layout_amps.addWidget(QLabel("Negative Seq (Fund):"), 8, 0, 1, 2)
         self.amp_neg_input = QDoubleSpinBox()
@@ -162,6 +274,10 @@ class ClarkeFFTWidget(QWidget):
         self.amp_neg_input.setSingleStep(0.1)
         self.amp_neg_input.valueChanged.connect(self.update_amplitudes)
         layout_amps.addWidget(self.amp_neg_input, 8, 2, 1, 2)
+        
+        self.btn_neg_color = ColorButton(COLOR_NEG_SEQ[0]) # Default Magenta
+        self.btn_neg_color.colorChanged = self.on_color_changed
+        layout_amps.addWidget(self.btn_neg_color, 8, 4)
 
         group_amps.setLayout(layout_amps)
         sidebar_layout.addWidget(group_amps)
@@ -228,12 +344,27 @@ class ClarkeFFTWidget(QWidget):
         self.extra_trajectory_checkbox.setEnabled(False)
         self.extra_trajectory_checkbox.stateChanged.connect(self.toggle_extra_trajectory)
 
+        self.chk_harmonic_rot = QCheckBox("Rot. Each Harm")
+        self.chk_harmonic_rot.stateChanged.connect(self.update_plots)
+        self.chk_harmonic_rot.stateChanged.connect(self.toggle_show_harmonics_btn)
+
+        self.btn_show_harmonics = QPushButton("Show My Harmonics")
+        self.btn_show_harmonics.setEnabled(False)
+        self.btn_show_harmonics.clicked.connect(self.start_harmonics_sequence)
+
         layout_viz.addWidget(self.decomposition_checkbox)
         layout_viz.addWidget(self.trajectory_checkbox)
         layout_viz.addWidget(self.show_rotating_fields_checkbox)
         layout_viz.addWidget(self.extra_trajectory_checkbox)
+        layout_viz.addWidget(self.chk_harmonic_rot)
+        layout_viz.addWidget(self.btn_show_harmonics)
         group_viz.setLayout(layout_viz)
         sidebar_layout.addWidget(group_viz)
+
+        # Overlay for arrows
+        self.overlay = OverlayWidget(self)
+        self.overlay.resize(self.size())
+        self.overlay.raise_()
 
 
         sidebar_layout.addStretch() # Push everything up
@@ -246,23 +377,23 @@ class ClarkeFFTWidget(QWidget):
         grid.setSpacing(10)
 
         # 1. Combined Field (Phasor ABC) - Top Left
-        self.field_combined = self.create_field("Combined Sequence (ABC)")
+        self.field_combined = self.create_field("ABC Phasors")
         grid.addWidget(self.field_combined, 0, 0)
 
         # 2. Combined Signals (Time Domain ABC) - Top Right
-        self.plot_combined = self.create_signal_plot("Signals: Combined (ABC)")
+        self.plot_combined = self.create_signal_plot("ABC Signals")
         grid.addWidget(self.plot_combined, 0, 1)
 
         # 3. Clarke Field (Phasor Alpha-Beta) - Middle Left
-        self.field_clarke = self.create_field("Clarke Transform (αβ)")
+        self.field_clarke = self.create_field("Clarke Transform - αβ")
         grid.addWidget(self.field_clarke, 1, 0)
 
         # 4. Clarke Signals (Time Domain Alpha-Beta) - Middle Right
-        self.plot_clarke = self.create_signal_plot("Signals: αβ")
+        self.plot_clarke = self.create_signal_plot("αβ Signals")
         grid.addWidget(self.plot_clarke, 1, 1)
         
         # 5. FFT Spectrum - Bottom (Spanning 2 columns)
-        self.plot_fft = self.create_signal_plot("FFT Spectrum (Magnitude)")
+        self.plot_fft = self.create_signal_plot("Double Sided FFT")
         self.plot_fft.setLabel('bottom', "Harmonic Order")
         self.plot_fft.setLabel('left', "Magnitude")
         self.plot_fft.getPlotItem().getAxis('left').enableAutoSIPrefix(False)
@@ -307,6 +438,19 @@ class ClarkeFFTWidget(QWidget):
         self.field_combined.addItem(self.extra_trajectory_pos)
         self.extra_trajectory_neg = pg.PlotDataItem(pen=pg.mkPen(COLOR_RES_NEG, width=1, style=Qt.DotLine))
         self.field_combined.addItem(self.extra_trajectory_neg)
+
+        # Harmonic Rotating Vectors (Pool for up to 20 vectors)
+        self.lines_harmonics = []
+        self.tips_harmonics = []
+        for _ in range(20):
+            line = pg.PlotDataItem(pen=pg.mkPen('w', width=2))
+            tip = pg.ScatterPlotItem(size=10, brush='w', pen=None)
+            self.field_combined.addItem(line)
+            self.field_combined.addItem(tip)
+            line.setVisible(False)
+            tip.setVisible(False)
+            self.lines_harmonics.append(line)
+            self.tips_harmonics.append(tip)
         
         # --- Clarke Items ---
         # Vectors (Alpha, Beta)
@@ -327,9 +471,14 @@ class ClarkeFFTWidget(QWidget):
         self.traj_points_clarke = []
 
         # FFT Curve (Stem Plot)
-        # Vertical lines (Blue)
-        self.fft_stem_lines = pg.PlotDataItem(connect='pairs', pen=pg.mkPen('#007acc', width=2))
-        self.plot_fft.addItem(self.fft_stem_lines)
+        # Vertical lines (Pool for individual coloring)
+        self.fft_lines_pool = []
+        for _ in range(50): # Pool of 50 lines
+            line = pg.PlotDataItem(pen=pg.mkPen('#007acc', width=2))
+            self.plot_fft.addItem(line)
+            line.setVisible(False)
+            self.fft_lines_pool.append(line)
+            
         # Markers (Red Circles)
         self.fft_stem_markers = pg.ScatterPlotItem(size=10, brush='#FF0000', pen=None)
         self.plot_fft.addItem(self.fft_stem_markers)
@@ -573,26 +722,102 @@ class ClarkeFFTWidget(QWidget):
             mag_filtered = mag[mask]
             
             # Update Plot (Stem style)
-            # Create interleaved x and y for vertical lines: (x, 0) to (x, y)
+            # Hide all lines first
+            for line in self.fft_lines_pool:
+                line.setVisible(False)
+            
+            brushes = []
+            
             if len(freqs_filtered) > 0:
-                x_stems = np.repeat(freqs_filtered, 2)
-                y_stems = np.zeros(2 * len(mag_filtered))
-                y_stems[1::2] = mag_filtered
+                for i, (freq, mag) in enumerate(zip(freqs_filtered, mag_filtered)):
+                    if i >= len(self.fft_lines_pool): break
+                    
+                    line = self.fft_lines_pool[i]
+                    
+                    # Determine Color
+                    h_order = int(round(abs(freq)))
+                    color = '#FFFFFF' # Default White
+                    
+                    if h_order == 1:
+                        if freq > 0: # Positive Sequence
+                            color = self.harmonic_color_btns[0].color()
+                        else: # Negative Sequence
+                            color = self.btn_neg_color.color()
+                    elif 1 < h_order <= 13:
+                        color = self.harmonic_color_btns[h_order-1].color()
+                    
+                    # Set Line
+                    line.setData([freq, freq], [0, mag])
+                    line.setPen(pg.mkPen(color, width=2))
+                    line.setVisible(True)
+                    
+                    brushes.append(pg.mkBrush(color))
                 
-                self.fft_stem_lines.setData(x_stems, y_stems)
-                self.fft_stem_markers.setData(freqs_filtered, mag_filtered)
+                self.fft_stem_markers.setData(freqs_filtered, mag_filtered, symbolBrush=brushes)
             else:
-                self.fft_stem_lines.setData([], [])
                 self.fft_stem_markers.setData([], [])
 
             # Handle Y-Axis Range
-            max_mag = np.max(mag) if len(mag) > 0 else 0
+            max_mag = np.max(mag) if mag.size > 0 else 0
             if max_mag > 1.0:
                 self.plot_fft.setYRange(0, max_mag * 1.1)
             else:
                 self.plot_fft.setYRange(0, 1.0)
 
+    def apply_preset(self):
+        preset = self.combo_presets.currentText()
+        if preset == "Custom":
+            return
+
+        self.applying_preset = True
+
+        # Default is H1=1.0, others 0
+        new_pos = [0.0] * 13
+        new_pos[0] = 1.0 # H1 default
+        
+        if preset == "Wind Blades":
+            new_pos[0] = 1.0 # H1
+            new_pos[1] = 0.5 # H2
+            new_pos[3] = 0.4 # H4
+            new_pos[4] = 0.2 # H5
+            new_pos[6] = 0.2 # H7
+            new_pos[7] = 0.1 # H8
+        elif preset == "Oak Tree":
+            new_pos[0] = 1.0 # H1
+            new_pos[1] = 0.3 # H2
+            new_pos[3] = 0.2 # H4
+            new_pos[10] = 0.1 # H11
+            new_pos[12] = 0.1 # H13
+        elif preset == "Gear":
+            new_pos[0] = 1.0 # H1
+            new_pos[10] = 0.1 # H11
+            new_pos[12] = 0.1 # H13
+        elif preset == "Hypotrochoid":
+            new_pos[0] = 1.0 # H1
+            new_pos[7] = 0.5 # H8
+        elif preset == "Pure Sine":
+            new_pos[0] = 1.0 # H1
+
+        # Update SpinBoxes
+        for i, spin in enumerate(self.amp_pos_inputs):
+            spin.blockSignals(True)
+            spin.setValue(new_pos[i])
+            spin.blockSignals(False)
+            
+        self.amp_neg_input.blockSignals(True)
+        self.amp_neg_input.setValue(0.0)
+        self.amp_neg_input.blockSignals(False)
+        
+        self.update_amplitudes()
+        self.clear_trajectories()
+        self.applying_preset = False
+
     def update_amplitudes(self):
+        if not hasattr(self, 'applying_preset') or not self.applying_preset:
+            self.combo_presets.blockSignals(True)
+            self.combo_presets.setCurrentText("Custom")
+            self.combo_presets.blockSignals(False)
+
         self.amp_pos_harmonics = [spin.value() for spin in self.amp_pos_inputs]
         self.amp_neg = self.amp_neg_input.value()
         self.compute_signals()
@@ -618,8 +843,33 @@ class ClarkeFFTWidget(QWidget):
 
         # Enable extra trajectory checkbox only if conditions are met
         self.extra_trajectory_checkbox.setEnabled(
-            self.trajectory_checkbox.isChecked() and self.show_rotating_fields_checkbox.isChecked()
+            (self.trajectory_checkbox.isChecked() and self.show_rotating_fields_checkbox.isChecked()) or
+            (self.trajectory_checkbox.isChecked() and self.chk_harmonic_rot.isChecked())
         )
+
+        # Handle "Rot. Each Harm" mode
+        is_harmonic_rot_mode = self.chk_harmonic_rot.isChecked()
+        
+        if is_harmonic_rot_mode:
+            self.decomposition_checkbox.setEnabled(False)
+            self.show_rotating_fields_checkbox.setEnabled(False)
+            # Hide standard ABC vectors
+            for line in self.lines_combined: line.setVisible(False)
+            for tip in self.tips_combined: tip.setVisible(False)
+            self.extra_line_pos.setVisible(False)
+            self.extra_tip_pos.setVisible(False)
+            self.extra_line_neg.setVisible(False)
+            self.extra_tip_neg.setVisible(False)
+        else:
+            self.decomposition_checkbox.setEnabled(True)
+            self.show_rotating_fields_checkbox.setEnabled(True)
+            # Hide harmonic vectors
+            for line in self.lines_harmonics: line.setVisible(False)
+            for tip in self.tips_harmonics: tip.setVisible(False)
+            self.extra_line_pos.setVisible(True)
+            self.extra_tip_pos.setVisible(True)
+            self.extra_line_neg.setVisible(True)
+            self.extra_tip_neg.setVisible(True)
 
         decomposition = self.decomposition_checkbox.isChecked()
 
@@ -637,27 +887,125 @@ class ClarkeFFTWidget(QWidget):
         sum_neg = (sum(v[0] for v in vectors_neg), sum(v[1] for v in vectors_neg))
         
         # Update combined vectors
-        self.update_field_vectors(self.lines_combined, self.tips_combined, vectors_combined, self.resultant_line_combined, self.resultant_tip_combined, decomposition)
+        if not is_harmonic_rot_mode:
+            self.update_field_vectors(self.lines_combined, self.tips_combined, vectors_combined, self.resultant_line_combined, self.resultant_tip_combined, decomposition)
 
-        # Fix for artifact when amplitude is 0: Hide vectors if amplitude is 0
-        total_pos_amp = sum(self.amp_pos_harmonics)
-        if total_pos_amp < 0.01:
-            for i in range(3):
-                self.lines_combined[i].setVisible(False)
-                self.tips_combined[i].setVisible(False)
-        else:
-            for i in range(3):
-                self.lines_combined[i].setVisible(True)
-                self.tips_combined[i].setVisible(True)
+            # Fix for artifact when amplitude is 0: Hide vectors if amplitude is 0
+            total_pos_amp = sum(self.amp_pos_harmonics)
+            if total_pos_amp < 0.01:
+                for i in range(3):
+                    self.lines_combined[i].setVisible(False)
+                    self.tips_combined[i].setVisible(False)
+            else:
+                for i in range(3):
+                    self.lines_combined[i].setVisible(True)
+                    self.tips_combined[i].setVisible(True)
 
-        if self.amp_neg < 0.01:
-            for i in range(3, 6):
-                self.lines_combined[i].setVisible(False)
-                self.tips_combined[i].setVisible(False)
+            if self.amp_neg < 0.01:
+                for i in range(3, 6):
+                    self.lines_combined[i].setVisible(False)
+                    self.tips_combined[i].setVisible(False)
+            else:
+                for i in range(3, 6):
+                    self.lines_combined[i].setVisible(True)
+                    self.tips_combined[i].setVisible(True)
         else:
-            for i in range(3, 6):
-                self.lines_combined[i].setVisible(True)
-                self.tips_combined[i].setVisible(True)
+            # --- Harmonic Rotation Mode ---
+            # Calculate rotating vectors for each harmonic
+            # H1 Pos: CCW
+            # H1 Neg: CW
+            # H2: Neg Seq -> CW
+            # H3: Zero Seq -> Skip
+            # H4: Pos Seq -> CCW
+            # ...
+            
+            harm_vectors = []
+            
+            # 1. Fundamental Positive Sequence (H1 Pos)
+            amp_h1 = self.amp_pos_harmonics[0]
+            vec_h1_pos = (0, 0)
+            s = 1.5 # Scaling factor to match Combined view
+            
+            if amp_h1 > 0.001:
+                # CCW
+                angle = omega * t[frame]
+                vec_h1_pos = (amp_h1 * s * np.cos(angle), amp_h1 * s * np.sin(angle))
+                harm_vectors.append({'vec': vec_h1_pos, 'color': self.harmonic_color_btns[0].color()})
+                
+            # 2. Fundamental Negative Sequence (H1 Neg)
+            vec_h1_neg = (0, 0)
+            if self.amp_neg > 0.001:
+                # CW
+                angle = -omega * t[frame]
+                vec_h1_neg = (self.amp_neg * s * np.cos(angle), self.amp_neg * s * np.sin(angle))
+                harm_vectors.append({'vec': vec_h1_neg, 'color': self.btn_neg_color.color()})
+                
+            # 3. Harmonics (H2 to H13)
+            for i in range(1, 13):
+                h_order = i + 1
+                amp = self.amp_pos_harmonics[i]
+                if amp > 0.001:
+                    rem = h_order % 3
+                    if rem == 1: # Positive Sequence -> CCW
+                        angle = h_order * omega * t[frame]
+                        vec = (amp * s * np.cos(angle), amp * s * np.sin(angle))
+                        harm_vectors.append({'vec': vec, 'color': self.harmonic_color_btns[i].color()})
+                    elif rem == 2: # Negative Sequence -> CW
+                        angle = -h_order * omega * t[frame]
+                        vec = (amp * s * np.cos(angle), amp * s * np.sin(angle))
+                        harm_vectors.append({'vec': vec, 'color': self.harmonic_color_btns[i].color()})
+                    # Zero sequence (rem == 0) is skipped
+            
+            # Draw vectors tip-to-tail
+            current_x, current_y = 0, 0
+            
+            # Hide all first
+            for line in self.lines_harmonics: line.setVisible(False)
+            for tip in self.tips_harmonics: tip.setVisible(False)
+            
+            for i, item in enumerate(harm_vectors):
+                if i >= len(self.lines_harmonics): break
+                
+                vec = item['vec']
+                color = item['color']
+                
+                line = self.lines_harmonics[i]
+                tip = self.tips_harmonics[i]
+                
+                line.setPen(pg.mkPen(color, width=2))
+                tip.setBrush(color)
+                
+                line.setData([current_x, current_x + vec[0]], [current_y, current_y + vec[1]])
+                tip.setData([current_x + vec[0]], [current_y + vec[1]])
+                
+                line.setVisible(True)
+                tip.setVisible(True)
+                
+                current_x += vec[0]
+                current_y += vec[1]
+                
+            # Update resultant to point to the end of the chain
+            self.resultant_line_combined.setData([0, current_x], [0, current_y])
+            self.resultant_tip_combined.setData([current_x], [current_y])
+
+            # Fundamental Trajectory (H1 Pos + H1 Neg)
+            if self.extra_trajectory_checkbox.isChecked():
+                # Sum of H1 Pos and H1 Neg
+                vec_fund_x = vec_h1_pos[0] + vec_h1_neg[0]
+                vec_fund_y = vec_h1_pos[1] + vec_h1_neg[1]
+                
+                self.traj_points_extra_pos.append((vec_fund_x, vec_fund_y))
+                xs, ys = zip(*self.traj_points_extra_pos)
+                self.extra_trajectory_pos.setData(xs, ys)
+                # Ensure it's visible and styled
+                self.extra_trajectory_pos.setVisible(True)
+                self.extra_trajectory_pos.setPen(pg.mkPen(COLOR_RES_POS, width=1, style=Qt.DashLine))
+                
+                # Hide the neg trajectory in this mode
+                self.extra_trajectory_neg.setVisible(False)
+            else:
+                self.extra_trajectory_pos.setData([], [])
+                self.extra_trajectory_neg.setData([], [])
 
         # --- Clarke Mode Updates ---
         # Update markers
@@ -675,7 +1023,8 @@ class ClarkeFFTWidget(QWidget):
         self.update_field_vectors(self.lines_clarke, self.tips_clarke, vectors_clarke, self.resultant_line_clarke, self.resultant_tip_clarke, decomposition)
         
         # Extra rotating fields in combined
-        if self.show_rotating_fields_checkbox.isChecked():
+        if self.show_rotating_fields_checkbox.isChecked() and not is_harmonic_rot_mode:
+            total_pos_amp = sum(self.amp_pos_harmonics) # Re-calculate for safety if not in scope
             if total_pos_amp >= 0.01:
                 x_pos = sum_pos[0]
                 y_pos = sum_pos[1]
@@ -816,6 +1165,169 @@ class ClarkeFFTWidget(QWidget):
     def on_speed_changed(self):
         if self.is_playing:
             self.update_timer_interval()
+
+    def on_color_changed(self):
+        self.compute_fft()
+        self.update_plots(self.slider.value())
+
+    def resizeEvent(self, event):
+        if hasattr(self, 'overlay'):
+            self.overlay.resize(self.size())
+        super().resizeEvent(event)
+
+    def toggle_show_harmonics_btn(self):
+        self.btn_show_harmonics.setEnabled(self.chk_harmonic_rot.isChecked())
+
+    def start_harmonics_sequence(self):
+        if self.is_playing:
+            self.toggle_play() # Pause
+
+        # Capture current view range to restore later
+        self.pre_anim_view_range = self.field_combined.viewRange()
+
+        # 1. Identify active harmonics
+        self.active_harmonics_seq = []
+        
+        # H1 Pos
+        if self.amp_pos_harmonics[0] > 0.001:
+            self.active_harmonics_seq.append({'type': 'h1_pos', 'freq': 1, 'color': self.harmonic_color_btns[0].color(), 'index': 0})
+            
+        # H1 Neg
+        if self.amp_neg > 0.001:
+            self.active_harmonics_seq.append({'type': 'h1_neg', 'freq': -1, 'color': self.btn_neg_color.color(), 'index': 1})
+            
+        # Others
+        for i in range(1, 13):
+            h_order = i + 1
+            amp = self.amp_pos_harmonics[i]
+            if amp > 0.001:
+                rem = h_order % 3
+                freq = h_order if rem == 1 else -h_order
+                if rem != 0: # Skip zero seq
+                    self.active_harmonics_seq.append({'type': 'harm', 'freq': freq, 'color': self.harmonic_color_btns[i].color(), 'index': len(self.active_harmonics_seq)})
+
+        if not self.active_harmonics_seq:
+            return
+
+        # 3. Start Sequence
+        self.seq_step = 0
+        self.run_harmonics_step()
+
+    def run_harmonics_step(self):
+        if self.seq_step >= len(self.active_harmonics_seq):
+            self.overlay.clear_arrow()
+            
+            # Restore View Range
+            if hasattr(self, 'pre_anim_view_range'):
+                self.field_combined.setXRange(self.pre_anim_view_range[0][0], self.pre_anim_view_range[0][1], padding=0)
+                self.field_combined.setYRange(self.pre_anim_view_range[1][0], self.pre_anim_view_range[1][1], padding=0)
+            
+            # Resume Playback
+            if not self.is_playing:
+                self.toggle_play()
+                
+            return
+
+        item = self.active_harmonics_seq[self.seq_step]
+        freq = item['freq']
+        color = item['color']
+        
+        # Get FFT Position (Start)
+        fft_point = QPointF(freq, 0) # Fallback
+        
+        # Try to find actual point in scatter plot
+        scatter_points = self.fft_stem_markers.points()
+        for p in scatter_points:
+            if abs(p.pos().x() - freq) < 0.1:
+                fft_point = p.pos()
+                break
+        
+        # Map FFT point to global
+        vb_fft = self.plot_fft.plotItem.vb
+        scene_pos_fft = vb_fft.mapViewToScene(fft_point)
+        view_pos_fft = self.plot_fft.mapFromScene(scene_pos_fft)
+        global_pos_fft = self.plot_fft.mapToGlobal(view_pos_fft)
+        local_pos_fft = self.overlay.mapFromGlobal(global_pos_fft) # Map to overlay, not self
+        
+        # Get Phasor Position (End)
+        frame = self.slider.value()
+        
+        # Re-simulate the chain calculation
+        # 1. H1 Pos
+        vec_h1_pos = (0,0)
+        s = 1.5 # Scaling factor
+        
+        if self.amp_pos_harmonics[0] > 0.001:
+            angle = omega * t[frame]
+            vec_h1_pos = (self.amp_pos_harmonics[0] * s * np.cos(angle), self.amp_pos_harmonics[0] * s * np.sin(angle))
+            
+        # 2. H1 Neg
+        vec_h1_neg = (0,0)
+        if self.amp_neg > 0.001:
+            angle = -omega * t[frame]
+            vec_h1_neg = (self.amp_neg * s * np.cos(angle), self.amp_neg * s * np.sin(angle))
+            
+        chain_vectors = []
+        if self.amp_pos_harmonics[0] > 0.001: chain_vectors.append(vec_h1_pos)
+        if self.amp_neg > 0.001: chain_vectors.append(vec_h1_neg)
+        
+        for i in range(1, 13):
+            h_order = i + 1
+            amp = self.amp_pos_harmonics[i]
+            if amp > 0.001:
+                rem = h_order % 3
+                if rem == 1: # Pos
+                    angle = h_order * omega * t[frame]
+                    chain_vectors.append((amp * s * np.cos(angle), amp * s * np.sin(angle)))
+                elif rem == 2: # Neg
+                    angle = -h_order * omega * t[frame]
+                    chain_vectors.append((amp * s * np.cos(angle), amp * s * np.sin(angle)))
+        
+        # Calculate position
+        target_vec_start = (0, 0)
+        target_vec_end = (0, 0)
+        
+        curr = (0, 0)
+        found = False
+        for i, vec in enumerate(chain_vectors):
+            next_pos = (curr[0] + vec[0], curr[1] + vec[1])
+            if i == item['index']: # Use stored index
+                target_vec_start = curr
+                target_vec_end = next_pos
+                found = True
+                break
+            curr = next_pos
+            
+        # Midpoint of the vector
+        phasor_point_x = (target_vec_start[0] + target_vec_end[0]) / 2
+        phasor_point_y = (target_vec_start[1] + target_vec_end[1]) / 2
+        phasor_point = QPointF(phasor_point_x, phasor_point_y)
+        
+        # Zoom to this vector
+        # Calculate vector length
+        vec_len = np.sqrt((target_vec_end[0] - target_vec_start[0])**2 + (target_vec_end[1] - target_vec_start[1])**2)
+        zoom_span = max(vec_len * 3.0, 0.2) # Ensure minimum zoom
+        
+        self.field_combined.setXRange(phasor_point_x - zoom_span/2, phasor_point_x + zoom_span/2)
+        self.field_combined.setYRange(phasor_point_y - zoom_span/2, phasor_point_y + zoom_span/2)
+        
+        # Force update to ensure coordinates are correct after zoom
+        QApplication.processEvents()
+
+        # Map Phasor point to global
+        vb_field = self.field_combined.plotItem.vb
+        scene_pos_field = vb_field.mapViewToScene(phasor_point)
+        view_pos_field = self.field_combined.mapFromScene(scene_pos_field)
+        global_pos_field = self.field_combined.mapToGlobal(view_pos_field)
+        local_pos_field = self.overlay.mapFromGlobal(global_pos_field) # Map to overlay
+        
+        # Draw Arrow
+        self.overlay.show_arrow(local_pos_fft, local_pos_field, color)
+        self.overlay.raise_()
+        
+        # Schedule next step
+        self.seq_step += 1
+        QTimer.singleShot(2000, self.run_harmonics_step)
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)

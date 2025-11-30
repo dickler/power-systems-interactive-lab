@@ -97,6 +97,12 @@ button:hover {
     background-color: var(--accent-hover);
 }
 
+button:disabled {
+    background-color: #555;
+    cursor: not-allowed;
+    opacity: 0.7;
+}
+
 .checkbox-row,
 .checkbox-group div,
 .radio-group div {
@@ -130,144 +136,6 @@ button:hover {
     padding: 4px;
     border-radius: 4px;
     font-size: 0.9rem;
-}
-
-.harmonic-inputs {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 2px;
-}
-
-:root {
-    --bg-color: #1e1e1e;
-    --panel-color: #252526;
-    --text-color: #d4d4d4;
-    --accent-color: #007acc;
-    --accent-hover: #0098ff;
-    --border-color: #3e3e42;
-}
-
-* {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-}
-
-body {
-    font-family: 'Segoe UI', sans-serif;
-    background-color: var(--bg-color);
-    color: var(--text-color);
-    height: 100vh;
-    overflow: hidden;
-}
-
-.container {
-    display: flex;
-    height: 100%;
-}
-
-/* Sidebar */
-.sidebar {
-    width: 280px;
-    background-color: var(--panel-color);
-    border-right: 1px solid var(--border-color);
-    padding: 5px;
-    /* Compact padding */
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    /* Compact gap */
-    overflow-y: auto;
-}
-
-.sidebar-header h2 {
-    color: var(--accent-color);
-    text-align: center;
-    font-size: 1.2rem;
-    margin: 5px 0;
-}
-
-.control-group {
-    background-color: rgba(255, 255, 255, 0.03);
-    padding: 5px;
-    /* Compact padding */
-    border-radius: 6px;
-    border: 1px solid var(--border-color);
-}
-
-.control-group h3 {
-    color: var(--accent-color);
-    font-size: 0.8rem;
-    margin-bottom: 4px;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-}
-
-/* Inputs */
-.slider-container {
-    margin-bottom: 5px;
-}
-
-input[type="range"] {
-    width: 100%;
-    margin-top: 2px;
-}
-
-.button-row {
-    display: flex;
-    gap: 5px;
-    margin-bottom: 4px;
-}
-
-button {
-    flex: 1;
-    background-color: var(--accent-color);
-    color: white;
-    border: none;
-    padding: 4px;
-    /* Compact padding */
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
-    font-size: 0.85rem;
-    transition: background 0.2s;
-}
-
-button:hover {
-    background-color: var(--accent-hover);
-}
-
-.checkbox-row,
-.checkbox-group div,
-.radio-group div {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    margin-bottom: 4px;
-}
-
-.checkbox-group div label,
-.radio-group div label {
-    font-size: 0.85rem;
-}
-
-.input-group {
-    margin-bottom: 4px;
-}
-
-.input-group label {
-    display: block;
-    margin-bottom: 1px;
-    font-size: 0.8rem;
-}
-
-.input-group input[type="number"],
-.input-group select {
-    width: 100%;
-    background-color: var(--bg-color);
-    border: 1px solid var(--border-color);
-    color: var(--text-color);
-    overflow: hidden;
 }
 
 .harmonic-inputs {
@@ -289,6 +157,15 @@ button:hover {
     font-size: 0.9rem;
     font-weight: bold;
     white-space: nowrap;
+}
+
+input[type="color"] {
+    width: 20px;
+    height: 20px;
+    border: none;
+    padding: 0;
+    background: none;
+    cursor: pointer;
 }
 
 /* Main Content */
@@ -360,19 +237,19 @@ canvas {
 }
 
 .seq-pos {
-    color: #55FF55;
+    color: #ccc;
     font-weight: normal;
     font-size: 0.75em;
 }
 
 .seq-neg {
-    color: #FF55FF;
+    color: #ccc;
     font-weight: normal;
     font-size: 0.75em;
 }
 
 .seq-zero {
-    color: #FFFF55;
+    color: #ccc;
     font-weight: normal;
     font-size: 0.75em;
 }

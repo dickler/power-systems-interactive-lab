@@ -40,70 +40,96 @@
                         <option value="10">10x</option>
                     </select>
                 </div>
+                <div class="input-group">
+                    <label for="preset-select">Preset:</label>
+                    <select id="preset-select">
+                        <option value="Custom">Custom</option>
+                        <option value="Wind Blades">Wind Blades</option>
+                        <option value="Oak Tree">Oak Tree</option>
+                        <option value="Gear">Gear</option>
+                        <option value="Hypotrochoid">Hypotrochoid</option>
+                        <option value="Pure Sine">Pure Sine</option>
+                    </select>
+                </div>
             </div>
 
             <div class="control-group">
-                <h3>Amplitudes</h3>
                 <div class="input-group">
                     <label>Harmonics:</label>
                     <div class="harmonic-inputs">
                         <div class="h-input">
                             <label>H1 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h1" value="1.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h1" value="#55FF55">
                         </div>
                         <div class="h-input">
                             <label>H2 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h2" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h2" value="#FF55FF">
                         </div>
                         <div class="h-input">
                             <label>H3 <span class="seq-zero">(0)</span>:</label>
                             <input type="number" id="amp-h3" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h3" value="#FFFF55">
                         </div>
                         <div class="h-input">
                             <label>H4 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h4" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h4" value="#FF5555">
                         </div>
                         <div class="h-input">
                             <label>H5 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h5" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h5" value="#55FFFF">
                         </div>
                         <div class="h-input">
                             <label>H6 <span class="seq-zero">(0)</span>:</label>
                             <input type="number" id="amp-h6" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h6" value="#FFFF55">
                         </div>
                         <div class="h-input">
                             <label>H7 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h7" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h7" value="#5555FF">
                         </div>
                         <div class="h-input">
                             <label>H8 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h8" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h8" value="#FF00FF">
                         </div>
                         <div class="h-input">
                             <label>H9 <span class="seq-zero">(0)</span>:</label>
                             <input type="number" id="amp-h9" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h9" value="#FFFF55">
                         </div>
                         <div class="h-input">
                             <label>H10 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h10" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h10" value="#00FF00">
                         </div>
                         <div class="h-input">
                             <label>H11 <span class="seq-neg">(-)</span>:</label>
                             <input type="number" id="amp-h11" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h11" value="#00FFFF">
                         </div>
                         <div class="h-input">
                             <label>H12 <span class="seq-zero">(0)</span>:</label>
                             <input type="number" id="amp-h12" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h12" value="#FFFF55">
                         </div>
                         <div class="h-input">
                             <label>H13 <span class="seq-pos">(+)</span>:</label>
                             <input type="number" id="amp-h13" value="0.0" step="0.1" min="0" max="10">
+                            <input type="color" id="color-h13" value="#0000FF">
                         </div>
                     </div>
                 </div>
                 <div class="input-group">
                     <label for="amp-neg">Neg Seq (Fund):</label>
-                    <input type="number" id="amp-neg" value="0.1" step="0.1" min="0" max="10">
+                    <div class="h-input">
+                        <input type="number" id="amp-neg" value="0.1" step="0.1" min="0" max="10">
+                        <input type="color" id="color-neg" value="#FF55FF">
+                    </div>
                 </div>
             </div>
 
@@ -155,6 +181,13 @@
                         <input type="checkbox" id="extra-traj-check" disabled>
                         <label for="extra-traj-check">Trajectory for Extra Fields</label>
                     </div>
+                    <div>
+                        <input type="checkbox" id="rot-harm-check">
+                        <label for="rot-harm-check">Rot. Each Harm</label>
+                    </div>
+                    <div class="button-row" style="margin-top: 5px;">
+                        <button id="show-harm-btn" disabled>Show My Harmonics</button>
+                    </div>
                 </div>
             </div>
 
@@ -165,7 +198,9 @@
         </div>
 
         <div class="main-content">
-            <div class="plot-grid">
+            <div class="plot-grid" style="position: relative;">
+                <svg id="overlay"
+                    style="position: absolute; width: 100%; height: 100%; pointer-events: none; z-index: 100; top: 0; left: 0;"></svg>
                 <div class="plot-container">
                     <h3> ABC Phasors</h3>
                     <canvas id="field-combined"></canvas>
